@@ -1,3 +1,4 @@
+const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 
 //HAndelling errors Watch Lecture % to understand NetNinja JWT
@@ -6,18 +7,28 @@ const handleErrors = (err) => {
     let errors = { email: "", password: "" };
 
     //Duplicate error code
-    if(err.code===11000){
-        errors.email="That email is Already registered";
+    if (err.code === 11000) {
+        errors.email = "That email is Already registered";
         return errors;
     }
+
     //Validation Errors
     if (err.message.includes("user validation failed")) {
-        Object.values(err.errors).forEach(({properties})=>{
-            errors[properties.path]=properties.message; 
-        })
+        Object.values(err.errors).forEach(({ properties }) => {
+            errors[properties.path] = properties.message;
+        });
     }
-    return errors
+    return errors;
 }
+
+//Creating a Cookie
+const maxAge = 3 * 24 * 60 * 60; // 3days expire
+const createToken = (id) => {
+    return jwt.sign({ id }, "nazimhere", {
+        expiresIn: maxAge
+    });
+}
+
 
 module.exports.signup_get = (req, res) => {
     res.render("signup");
@@ -32,10 +43,14 @@ module.exports.signup_post = async (req, res) => {
 
     try {
         const user = await User.create({ email, password });
-        res.status(201).json(user);
+
+        const token = createToken(user._id);
+        res.cookie("jwt", token, { httpOnly: true, maxAge: maxAge * 1000 });
+
+        res.status(201).json({ user: user._id });
     }
     catch (err) {
-        const errors= handleErrors(err);
+        const errors = handleErrors(err);
         res.status(400).send(errors)
     }
 
@@ -43,7 +58,23 @@ module.exports.signup_post = async (req, res) => {
 
 module.exports.login_post = async (req, res) => {
     const { email, password } = req.body;
+    
 
-    console.log(email, password);
-    res.send("User login");
+    try {
+        const user = await User.login(email, password);
+        const token = createToken(user._id);
+        res.cookie("jwt", token, { httpOnly: true, maxAge: maxAge * 1000 });
+
+        res.status(200).json({user:user._id})
+    } 
+    catch{
+        res.status(400).json({  });
+        // error to render at frontend is not done
+    }
 }
+
+module.exports.logout_get = (req,res)=>{
+    res.cookie("jwt"," ",{ maxAge:1});
+    res.redirect("/");
+
+}  
