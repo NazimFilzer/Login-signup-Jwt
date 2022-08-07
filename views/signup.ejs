@@ -20,8 +20,7 @@
         const passwordError = document.querySelector(".password.error");
 
         form.addEventListener("submit", async (event) => {
-            event.preventDefault(); //Stops from refreshing??
-
+            event.preventDefault(); //Stops from refreshing THe Text inside post form will not go
 
             //reset errors
             emailError.textContent = " ";
@@ -42,14 +41,14 @@
                 const data = await res.json();
                 console.log(data);
                 //Cant Render this error messages in frontent, only in inbrowser console
-                const errors={data};
+                const errors = { data };
 
                 if (data.errors) {
                     emailError.textContent = data.errors.email;
                     passwordError.textContent = data.errors.password;
                 }
 
-                if(data.user){
+                if (data.user) {
                     location.assign("/");
                 }
 
